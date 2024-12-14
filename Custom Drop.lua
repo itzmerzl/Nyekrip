@@ -11,6 +11,9 @@ V = {
     },
     LOG = {
         DROP = {}
+    },
+    ACTION = {
+        CDROP = {LAST_USED = 0, COOLDOWN = 0}
     }
 }
 function GET_AMOUNT(A) for _, B in pairs(GetInventory()) do if B.id == A then return math.floor(B.amount) end end return 0 end
@@ -25,7 +28,29 @@ function WEDE(A) SendPacket(2, "action|dialog_return\ndialog_name|bank_withdraw\
 
 function CHECK_COOLDOWN() RunThread(function() while COOLDOWN do if CDROP then CDROP = false end if not COOLDOWN then break end CONSOLE("Please wait a seconds before dropping again...") Sleep(1500) COOLDOWN = false break end end) end
 
-function CUSTOM_DROP(F) tonumber(F) if COOLDOWN then CDROP = false return end RESULT = GET_DATA(F)
+function CAN_USE_CDROP(A)
+    local ACT = V.ACTION[A]
+    local C = os.time()
+    local T = ACT.COOLDOWN - (C - ACT.LAST_USED)
+    
+    if T <= 0 then
+        ACT.LAST_USED = C
+        return true, 0
+    else
+        return false, T
+    end
+end
+
+function CUSTOM_DROP()
+    local C, T = CAN_USE_CDROP("CDROP")
+    if C then
+        LogToConsole("Dropping!")
+    else
+        LogToConsole("Please wait " .. T .. " seconds before dropping again...")
+    end
+end
+
+function CUSTOM_DROP_OLD(F) tonumber(F) if COOLDOWN then CDROP = false return end RESULT = GET_DATA(F)
 WORLD_LOCK = F % 100 DIAMOND_LOCK = math.floor((F % 10000) / 100) BLUE_GEM_LOCK = math.floor((F % 1000000) / 10000) BLACK_GEM_LOCK = math.floor(F / 1000000)
 
 -- // Debugging CONSOLE("Result : "..WORLD_LOCK.. " - " .. DIAMOND_LOCK .. " - " .. BLUE_GEM_LOCK .. " - " ..BLACK_GEM_LOCK)
